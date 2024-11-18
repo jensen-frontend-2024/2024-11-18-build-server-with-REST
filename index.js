@@ -4,12 +4,15 @@
 const express = require("express");
 
 // This how you import stuff from other files. "./" means that we are looking for something inside the same folder as this file (index.js). This is called a relative path,it originates from the file we are currently in.
-const { blogPosts } = require("./data.js");
+let { blogPosts } = require("./data.js");
 
 // ########## Create the server, and configure it. ##########
 
 // Creates the server by invoking the express function and assigning it to the app variable.
 const app = express();
+
+// Parse the body object so it's available on the req object.
+app.use(express.json());
 
 // ########## Endpoints ##########
 
@@ -20,8 +23,90 @@ app.get("/blog-posts", (req, res) => {
 
 // Enpoint for getting a blogPost by id. ":id" is a dynamic path variable that acts as a placeholder for the specific blog post with the given id we would like to get.
 app.get("/blog-posts/:id", (req, res) => {
-  console.log(req.params);
-  res.send("Ok");
+  const params = req.params;
+  const id = params.id;
+
+  // Down below is the destructed alternative to get the id.
+  //   const { id } = req.params;
+
+  // "Find" is an array method, that loops through the array on which it was invoked on. It runs a callback function on each element in the array and does a check. If that check is true, that element will be returned. If every check in every iteration is false, in the end, undefined will be returned.
+  const blog = blogPosts.find((bp) => {
+    if (bp.id === id) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (blog) {
+    return res.json(blog);
+  }
+
+  return res
+    .status(404) // Means NOT FOUND
+    .json({ message: "The blog with that id was not found" });
+});
+
+// Endpoint for creating a new blog post and add it to the blogPosts-array.
+app.post("/blog-posts", (req, res) => {
+  const body = req.body;
+
+  if (body === undefined) {
+    return res.status(400).json({ message: "The body is missings." });
+  }
+
+  const content = body.content;
+  const newId = blogPosts.length + 1;
+
+  // Validation should be included here
+
+  const newBlogPost = {
+    id: newId,
+    content,
+  };
+
+  blogPosts.push(newBlogPost);
+
+  return res.status(201).json({ message: "The new blogPost was created" });
+});
+
+// Endpoint for updating a blog post.
+app.put("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (content === undefined) {
+    return res.status(400).json({ message: "The body is missing." });
+  }
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+
+  if (!blog) {
+    return res
+      .status(404)
+      .json({ message: "The blog with that id was not found" });
+  }
+
+  blog.content = content;
+
+  return res.json(blog);
+});
+
+// Endpont for deleting a blog post.
+app.delete("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+
+  if (!blog) {
+    return res
+      .status(404)
+      .json({ message: "The blog with that id was not found" });
+  }
+
+  blogPosts = blogPosts.filter((bp) => bp.id !== id);
+
+  return res.json({ message: "The blogpost was removed successfully" });
 });
 
 // ########## Start the server ##########

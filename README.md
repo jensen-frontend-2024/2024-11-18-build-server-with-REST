@@ -65,4 +65,220 @@ Länk för att ladda ner postman finner ni här: [Postman Download](https://www.
 
 ## Bygga server efter REST
 
+### POST
+
+För att göra en post så måste vi skapa en endpoint som anropar en specifik metod som hanterar just postförfrågningar. Det kan se ut så här:
+
+```js
+app.post("/blog-posts", (req, res) => {});
+```
+
+Parametrarna till post-metoden är samma som förut, en endpoint och en callback som i sin tur ger oss tillgång till `request`- och `response`-objektet.
+
+Det som separerar en POST mot en GET är att en POST nästan alltid kommer att inkludera ett body-objekt i request-objektet.
+
+```js
+app.post("/blog-posts", (req, res) => {
+  const body = req.body;
+});
+```
+
+Body-objektet måste innehålla fullständing information om den nya resursen vi vill skapa, i det här fallet en blogpost. Dock så behövs id inte inkluderas eftersom det brukar oftast skapas av databasen eller servern beroende på. Så vårt fall med en blogpost så kommer body endast innehålla ett objekt med ett `content`-attribute.
+
+Så det första man bör göra är att validera body, så all infomration där i är korrekt. I vårt falla hoppar vi över det men vi lägger till en kommentar som en påminnelse.
+
+```js
+app.post("/blog-posts", (req, res) => {
+  const body = req.body;
+
+  // Valideringskod här, är någon data inte korrekt så bör man returnera ett 400-svar. BAD REQUEST.
+
+//  Till exempel på bad request-svar:
+  return res
+    .status(400)
+    .json({
+      message: "The body contains malformed information".
+    })
+});
+```
+
+Men vi antar att allt är korrekt så vi skippar valideringen. Vi har heller inte någon databas så stegen som vi ska göra är:
+
+1. Skapa ett nytt blogpost-objekt.
+2. Skapa ett nytt id och lägg in det i det nya blogpost-objektet, samt content från bodyn.
+3. Pusha _(eller unshifta)_ på det nya objektet på blogposts-arrayen
+
+```js
+app.post("/blog-posts", (req, res) => {
+  const body = req.body;
+  const content = body.content;
+  const newId = blogPosts.length + 1;
+
+  const newBlogPost = {
+    id: newId,
+    content,
+  };
+
+  blogPosts.unshift(newBlogPost);
+
+  return res.status(201).json({ message: "The new blogPost was created" });
+});
+```
+
+Testing this in postman with no body works just fines. We get the expected error code in return since we are missing the body.
+
+In order to add the body postman we go to the body tab, we check the raw option and then we choose JSON as the data format. Then we just add our body in postman and click send.
+
+This won't work and that is because we are missing a "configuration" in our server. We need to add the following code to our index.js:
+
+```js
+app.use(express.json());
+```
+
+Denna kodrad kommer att koppla på den inkluderade body-objektet på request-objektet så vi kan använda oss utav den i vår serverkod. Bodyn kommer bli tillgänglig så här:
+
+```js
+const body = req.body;
+```
+
+När vi har lagt till denna kodrad så kan vi skicka vår post-request igen och det bör funka, vi bör få tillbaka 201 CREATED och ett meddelande som säger att det gick bra.
+
+### PUT
+
+Put ska användas för att uppdatera befintliga resurser på servern. Den är väldigt snarlik en POST, för vi använder ett body-objekt igen men vi behöver lite mer information, vi behöver nämligen veta exakt vilken blogpost vi ska uppdatera, alltså vi behöver också ett id till blogposten.
+
+```js
+app.put("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+});
+```
+
+Vi har två värden att ta hänsyn till här. Både id som kommer ifrån path-variabeln och body som kommer från request-objektet. Vi gör en destructuring för att det är nice, one-liners for the win!
+
+Men vi måste validera vår body, i alla fall kolla att den faktiskt finns.
+
+```js
+app.put("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (content === undefined) {
+    return res.status(400).json({ message: "The body is missing." });
+  }
+});
+```
+
+Nästa steg är att leta upp den blogposten som matchar det id som kom in genom path-variablen. Här kan vi återanvända logik från vår tidigare **GET /blog-posts/:id**-enpoint.
+
+```js
+app.put("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (content === undefined) {
+    return res.status(400).json({ message: "The body is missing." });
+  }
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+});
+```
+
+Logiken ovan är hämtat från tidigare endpoint MEN vi har kompirmerad den lite. Vi har tagit bort måsvingarna och if-checken och ersatt med ett villkor bara. Gör så här med en arrow funktion så betyder det at det som kommer direkt efter själva pilen är det som kommer att retuneras från callbacken.
+
+Variablen "blog" kommer efter att "find()" har körts klart antingen vara en blogpost, eller undefined. Detta kan vi använda i en if-check för att eventuellt skicka tillbaka ett NOT FOUND-svar.
+
+```js
+app.put("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (content === undefined) {
+    return res.status(400).json({ message: "The body is missing." });
+  }
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+
+  if (!blog) {
+    return res
+      .status(404)
+      .json({ message: "The blog with that id was not found" });
+  }
+
+  blog.content = content;
+
+  return res.json(blog);
+});
+```
+
+Då är vår put-request klar med enklare validering och felhantering.
+
+Sist men inte minst. Vi måste kunna ta bort resurser också från servern.
+
+Vi skapar vår delete-endpoint.
+
+```js
+app.delete("/blog-posts/:id", (req, res) => {});
+```
+
+Vi återanvänder samma url som getById och put. Vi behöver göra liknande validering också. I alla fall en validering så att vi inte försöker ta bort något som inte existerar.
+
+```js
+app.delete("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+
+  if (!blog) {
+    return res
+      .status(404)
+      .json({ message: "The blog with that id was not found" });
+  }
+});
+```
+
+Vi återanvänder samma logik igen som tidigare, när vi kollar om en blogpost faktiskt finns eller inte.
+
+Men det vi ska göra om den finns är att plocka bort den. Och dett görs enklasts med filtermetoden.
+
+Det kommer alltså att se ut så här:
+
+```js
+app.delete("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+
+  if (!blog) {
+    return res
+      .status(404)
+      .json({ message: "The blog with that id was not found" });
+  }
+
+  blogPosts = blogPosts.filter((bp) => bp.id !== id);
+});
+```
+
+Filtermetoden här går igenom alla blogposter och kollar om dess id är skiljt från id som kommer ifrån path-variabeln. Är bp.id och id inte skiljt från varandra så kommer filter returnera falsk vilket gör att den blogposten filtreras bort helt enkelt.
+
+När detta är gjort så kan vi retunerar status 200 och något bra meddelande.
+
+```js
+app.delete("/blog-posts/:id", (req, res) => {
+  const { id } = req.params;
+
+  const blog = blogPosts.find((bp) => bp.id === id);
+
+  if (!blog) {
+    return res
+      .status(404)
+      .json({ message: "The blog with that id was not found" });
+  }
+
+  blogPosts = blogPosts.filter((bp) => bp.id !== id);
+
+  return res.json({ message: "The blogpost was removed successfully" });
+});
+```
+
 [Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
