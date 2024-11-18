@@ -11,6 +11,11 @@
 
 - [Postman](#postman)
 
+- [Bygga server efter REST](#bygga-server-efter-rest)
+
+  - [Post](#post)
+  - [Put](#put)
+
 </details>
 
 ## REST
@@ -142,6 +147,8 @@ const body = req.body;
 ```
 
 När vi har lagt till denna kodrad så kan vi skicka vår post-request igen och det bör funka, vi bör få tillbaka 201 CREATED och ett meddelande som säger att det gick bra.
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
 
 ### PUT
 
@@ -280,5 +287,7 @@ app.delete("/blog-posts/:id", (req, res) => {
   return res.json({ message: "The blogpost was removed successfully" });
 });
 ```
+
+Då har vi ett fungerade RESTful API men de vanligast operatioinerna som man förväntas kunna göra i ett API.
 
 [Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
