@@ -11,7 +11,29 @@ function getAllPosts(req, res) {
   return res.json(posts);
 }
 
-function postBlog(req, res) {
+function getPostById(req, res) {
+  //   const params = req.params;
+  //   const id = params.id;
+  const { id } = req.params;
+
+  const getPostByIdQuery = `
+    SELECT * FROM posts 
+    WHERE post_id = ?
+`;
+
+  const stmt = db.prepare(getPostByIdQuery);
+  const post = stmt.get([id]);
+
+  if (post) {
+    return res.json(post);
+  }
+
+  return res
+    .status(404) // Means NOT FOUND
+    .json({ message: "The post with that id was not found" });
+}
+
+function postPost(req, res) {
   const body = req.body;
   const lengthOfBody = Object.keys(body).length;
 
@@ -34,7 +56,45 @@ function postBlog(req, res) {
     .json({ message: "The new post was successfully created" });
 }
 
+function putPost(req, res) {
+  const { id } = req.params;
+  const { body } = req; // object destructuring
+
+  if (!body.content) {
+    return res
+      .status(400)
+      .json({ message: "body.content is malformed or doesn't exist." });
+  }
+
+  const getPostByIdQuery = `
+    SELECT * FROM posts 
+    WHERE post_id = ?
+`;
+
+  let stmt = db.prepare(getPostByIdQuery);
+  const post = stmt.get([id]);
+
+  if (!post) {
+    return res
+      .status(404)
+      .json({ message: "The post with that id was not found" });
+  }
+
+  const putPostQuery = `
+    UPDATE posts
+    SET content = ?
+    WHERE post_id = ?
+  `;
+
+  stmt = db.prepare(putPostQuery);
+  stmt.run([body.content, id]);
+
+  return res.json({ message: "The post was successfully updated" });
+}
+
 module.exports = {
   getAllPosts,
-  postBlog,
+  getPostById,
+  postPost,
+  putPost,
 };
