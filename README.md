@@ -13,8 +13,12 @@
 
 - [Bygga server efter REST](#bygga-server-efter-rest)
 
+  - [Get](#get)
+    - [getAll](#getall)
+    - [getById](#getbyid)
   - [Post](#post)
   - [Put](#put)
+  - [Delete](#delete)
 
 </details>
 
@@ -69,6 +73,63 @@ Länk för att ladda ner postman finner ni här: [Postman Download](https://www.
 [Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
 
 ## Bygga server efter REST
+
+### GET
+
+Vi skapar två stycken get-endpoints. En för att hämta alla blogposter och en för att hämta en specifik blogpost efter ett id.
+
+#### getAll
+
+```js
+app.get("/blog-posts", (req, res) => {
+  res.json(blogPosts);
+});
+```
+
+En väldigt enkel endpoint som bara skickar tillbaks hela arrayen i ett respons. `blogPosts` är importerad in i `index.js`.
+
+```js
+let { blogPosts } = require("./data.js");
+```
+
+Den är definerad med en `let` eftersom vi "ersätter" den när vi filtrerar bort blogPosts med hjälp an en delete längre ner i koden.
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+#### getById
+
+Denna endpoint är lite mer komplicerad då vi måste ta hänsyn till ett id som kommer in som en path-variabel.
+
+```js
+app.get("/blog-posts/:id", (req, res) => {
+  const params = req.params;
+  const id = params.id;
+
+  const blog = blogPosts.find((bp) => {
+    if (bp.id === id) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (blog) {
+    return res.json(blog);
+  }
+
+  return res
+    .status(404) // Means NOT FOUND
+    .json({ message: "The blog with that id was not found" });
+});
+```
+
+Högst upp i koden kan vi se att vi plockar ut path-parametern från req-objektet via params. Det är ett objekt som express skapar till oss och kopplar på, på req-objektet. En path-variabel är en dynamisk paramterar och fungerar som en placeholder tills att ett request kommer in och matchas mot denna endpoint. Express kommer parsa det som står på `/:id`-platsen och lägga in det i params-objektet med samma namn.
+
+När vi har id, så använder vi `find()` för att hitta motsvarande blogpost i arrayn och sen skicka tillbaks den i ett response.
+
+`find()` är en arraymetod som loopar igenom arrayen som den är kallad på och kö en callbackfunktion på varje element. Callback-funktionens syfte är att returnera `true` eller `false` för att se om elementet som den itererar över är det elementet vi letar efter eller inte. Är det så så returneras elementet, annars blir det undefined.
+
+Det som är bra med find, är att den returnerar just undefined om den inte hittar någon matchning i array. Detta gör att vi enkelt kan göra en if-check på den och välja att svara med någon typ av felkod som beskriver vad felet här. I det här fallet så var det: `The blog with that id was not found.`.
 
 ### POST
 
@@ -219,6 +280,10 @@ app.put("/blog-posts/:id", (req, res) => {
 ```
 
 Då är vår put-request klar med enklare validering och felhantering.
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+### DELETE
 
 Sist men inte minst. Vi måste kunna ta bort resurser också från servern.
 
