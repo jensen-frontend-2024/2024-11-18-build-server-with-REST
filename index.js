@@ -3,8 +3,17 @@
 // Imports express in to our application. This path doesn't have any periodes or slashes, it means that it looks for something inside node_modules.
 const express = require("express");
 
+// Import the database class from better-sqlite3
+const Database = require("better-sqlite3");
+
+// Import the controller methods from blog.controller.js
+const { postBlog } = require("./blog.controller.js");
+
 // This how you import stuff from other files. "./" means that we are looking for something inside the same folder as this file (index.js). This is called a relative path,it originates from the file we are currently in.
 let { blogPosts } = require("./data.js");
+
+// ########## Create connection with database ##########
+const db = new Database("blog.db");
 
 // ########## Create the server, and configure it. ##########
 
@@ -48,27 +57,7 @@ app.get("/blog-posts/:id", (req, res) => {
 });
 
 // Endpoint for creating a new blog post and add it to the blogPosts-array.
-app.post("/blog-posts", (req, res) => {
-  const body = req.body;
-
-  if (body === undefined) {
-    return res.status(400).json({ message: "The body is missings." });
-  }
-
-  const content = body.content;
-  const newId = blogPosts.length + 1;
-
-  // Validation should be included here
-
-  const newBlogPost = {
-    id: newId,
-    content,
-  };
-
-  blogPosts.push(newBlogPost);
-
-  return res.status(201).json({ message: "The new blogPost was created" });
-});
+app.post("/blog-posts", postBlog);
 
 // Endpoint for updating a blog post.
 app.put("/blog-posts/:id", (req, res) => {

@@ -20,6 +20,12 @@
   - [Put](#put)
   - [Delete](#delete)
 
+- [Vi lägger till en databas](#vi-lägger-till-en-databas)
+
+  - [Installera](#installera)
+  - [Integrera better-sqlite3 med vår server](#integrera-better-sqlite3-med-vår-server)
+  - [Post till sqlite](#post-till-sqlite)
+
 </details>
 
 ## REST
@@ -356,3 +362,48 @@ app.delete("/blog-posts/:id", (req, res) => {
 Då har vi ett fungerade RESTful API men de vanligast operatioinerna som man förväntas kunna göra i ett API.
 
 [Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+## Vi lägger till en databas
+
+Den databasen vi ska lägga till är givetvis en SQLite-databas. Men för att den databasen ska kunna prata med vår server så behöver vi ett npm-paket som helt enkelt integrerar SQLite med vår express-server. Paketet heter `better-sqlite3`.
+
+Första stegen är ju såklart att skapa databasen i SQLite Studio och lägga själva databasfilen i samma map som vårt projekt. Skapa även de tabellerna, och kolumnerna som krävs. Än så länge är det bara en tabell i form av `posts` med kolumnerna `post_id` och `content`.
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+### Installera
+
+Kommando för att installera är:
+
+`npm install better-sqlite3`
+
+När det är gjort kan vi se att det har skett lite tillägg i `package.json` och `package-lock.json`. Precis som det ska. Dessa två filer håller helt enkelt koll på alla paket och alla filer som installeras med npm.
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+### Integrera better-sqlite3 med vår server
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+Det första vi måste göra är att importera in det i vårt projekt. Görs med detta kommando:
+
+```js
+const Database = require("better-sqlite3");
+```
+
+Detta importerar in klassen som vi måste använda oss utav för att skapa kontakten med databsen. Eftersom det är en klass så är namnkonventionen `PascalCase`, alltså stor bokstav i början och stor bokstav för varje "nytt" ord.
+
+För att skapa kontakten så gör vi detta:
+
+```js
+const db = new Database("blog.db");
+```
+
+Sen kör vi igång vår server.
+
+[Tillbaks till toppen](#2024-11-18-bygga-server-med-rest)
+
+### POST till sqlite
+
+För att städa upp vår kod och göra den lite mer modulär så vill vi börja dela upp det i lite olika filer, Vi skapar först en fil som heter `blog.controller.js`, som då ska hantera alla våra requests. Så requestet hamnar på vår server, vår `index.js` matchar den mot någon av endpointsen och endpointen i sn tur anropar en funktion i vår `blog.controller.js`. Då får vi logiken lite separerad i olika filer.
+
