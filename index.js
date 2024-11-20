@@ -5,6 +5,7 @@ const express = require("express");
 
 // Import the controller methods from blog.controller.js
 const {
+  deletePost,
   getAllPosts,
   getPostById,
   postPost,
@@ -28,22 +29,7 @@ app.get("/posts", getAllPosts);
 app.get("/posts/:id", getPostById);
 app.post("/posts", postPost);
 app.put("/posts/:id", putPost);
-
-app.delete("/blog-posts/:id", (req, res) => {
-  const { id } = req.params;
-
-  const blog = blogPosts.find((bp) => bp.id === id);
-
-  if (!blog) {
-    return res
-      .status(404)
-      .json({ message: "The blog with that id was not found" });
-  }
-
-  blogPosts = blogPosts.filter((bp) => bp.id !== id);
-
-  return res.json({ message: "The blogpost was removed successfully" });
-});
+app.delete("/posts/:id", deletePost);
 
 // ########## Start the server ##########
 

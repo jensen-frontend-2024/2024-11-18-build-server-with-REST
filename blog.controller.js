@@ -4,6 +4,26 @@ const Database = require("better-sqlite3");
 // ########## Create connection with database ##########
 const db = new Database("blog.db");
 
+function deletePost(req, res) {
+  const { id } = req.params;
+
+  if (!postExists(id)) {
+    return res
+      .status(404)
+      .json({ message: "The post with that id was not found" });
+  }
+
+  const deletePostById = `
+    DELETE FROM posts
+    WHERE post_id = ?
+  `;
+
+  stmt = db.prepare(deletePostById);
+  stmt.run([id]);
+
+  return res.json({ message: "The post was deleted successfully." });
+}
+
 function getAllPosts(req, res) {
   const getAllPostsQuery = `SELECT * FROM posts`;
   const stmt = db.prepare(getAllPostsQuery);
@@ -66,15 +86,7 @@ function putPost(req, res) {
       .json({ message: "body.content is malformed or doesn't exist." });
   }
 
-  const getPostByIdQuery = `
-    SELECT * FROM posts 
-    WHERE post_id = ?
-`;
-
-  let stmt = db.prepare(getPostByIdQuery);
-  const post = stmt.get([id]);
-
-  if (!post) {
+  if (!postExists(id)) {
     return res
       .status(404)
       .json({ message: "The post with that id was not found" });
@@ -92,7 +104,20 @@ function putPost(req, res) {
   return res.json({ message: "The post was successfully updated" });
 }
 
+function postExists(id) {
+  const getPostByIdQuery = `
+    SELECT * FROM posts 
+    WHERE post_id = ?
+`;
+
+  let stmt = db.prepare(getPostByIdQuery);
+  const post = stmt.get([id]);
+
+  return post ? true : false;
+}
+
 module.exports = {
+  deletePost,
   getAllPosts,
   getPostById,
   postPost,
