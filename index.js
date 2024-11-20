@@ -3,17 +3,11 @@
 // Imports express in to our application. This path doesn't have any periodes or slashes, it means that it looks for something inside node_modules.
 const express = require("express");
 
-// Import the database class from better-sqlite3
-const Database = require("better-sqlite3");
-
 // Import the controller methods from blog.controller.js
-const { postBlog } = require("./blog.controller.js");
+const { getAllPosts, postBlog } = require("./blog.controller.js");
 
 // This how you import stuff from other files. "./" means that we are looking for something inside the same folder as this file (index.js). This is called a relative path,it originates from the file we are currently in.
 let { blogPosts } = require("./data.js");
-
-// ########## Create connection with database ##########
-const db = new Database("blog.db");
 
 // ########## Create the server, and configure it. ##########
 
@@ -25,12 +19,7 @@ app.use(express.json());
 
 // ########## Endpoints ##########
 
-// Endpoint for getting all the blog posts
-app.get("/blog-posts", (req, res) => {
-  res.json(blogPosts);
-});
-
-// Enpoint for getting a blogPost by id. ":id" is a dynamic path variable that acts as a placeholder for the specific blog post with the given id we would like to get.
+app.get("/posts", getAllPosts);
 app.get("/blog-posts/:id", (req, res) => {
   const params = req.params;
   const id = params.id;
@@ -55,11 +44,7 @@ app.get("/blog-posts/:id", (req, res) => {
     .status(404) // Means NOT FOUND
     .json({ message: "The blog with that id was not found" });
 });
-
-// Endpoint for creating a new blog post and add it to the blogPosts-array.
-app.post("/blog-posts", postBlog);
-
-// Endpoint for updating a blog post.
+app.post("/posts", postBlog);
 app.put("/blog-posts/:id", (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
@@ -80,8 +65,6 @@ app.put("/blog-posts/:id", (req, res) => {
 
   return res.json(blog);
 });
-
-// Endpont for deleting a blog post.
 app.delete("/blog-posts/:id", (req, res) => {
   const { id } = req.params;
 
